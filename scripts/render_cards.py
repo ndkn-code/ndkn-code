@@ -52,6 +52,7 @@ THEMES = {
         "muted": "#6f7189",
         "faint": "#9aa3b2",
         "primary": "#5279fd",
+        "fill": "#5279fd",
         "on_primary": "#ffffff",
         "primary_tint": "#d4dcfe",
         "track": "#e9edf5",
@@ -70,7 +71,10 @@ THEMES = {
         "strong": "#f8fafc",
         "muted": "#94a3b8",
         "faint": "#64748b",
-        "primary": "#6b8fff",
+        # Dark mode matches the portfolio: a lighter blue for text (7.4:1 on the page),
+        # a deeper blue for fills so white text on them passes AA (6.4:1).
+        "primary": "#86a3ff",
+        "fill": "#3654c9",
         "on_primary": "#ffffff",
         "primary_tint": "#2c3f7a",
         "track": "#1e293b",
@@ -332,13 +336,13 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
     body.append(rrect(WX + pad, comp_y, comp_w, 40, 20, th["paper"], th["input"]))
     body.append(t(WX + pad + 16, comp_y + 25, chat["placeholder"], 13, th["muted"]))
     bx = WX + pad + comp_w - 36
-    body.append(rrect(bx, comp_y + 4, 32, 32, 16, th["primary"]))
+    body.append(rrect(bx, comp_y + 4, 32, 32, 16, th["fill"]))
     body.append(f'<svg x="{bx + 9}" y="{comp_y + 13}" width="14" height="14" viewBox="0 0 256 256"><path d="{SEND}" fill="{th["on_primary"]}"/></svg>')
 
     # Beat 1: the question is sent.
     qx = right - q_w
     body.append(
-        f'<g class="q">{bubble(qx, q_y, q_w, 40, 18, "br", th["primary"])}'
+        f'<g class="q">{bubble(qx, q_y, q_w, 40, 18, "br", th["fill"])}'
         f'{t(qx + 16, q_y + 25, chat["question"], q_size, th["on_primary"], 500)}</g>'
     )
     css.append(".q{animation:drop .4s cubic-bezier(.2,.8,.2,1) .5s 1 backwards}")
@@ -385,9 +389,9 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
 
 LATER = 2.9
 TILE = {
-    "blue": {"bg": "#4467e8", "ink": "#ffffff", "soft": "rgba(255,255,255,0.78)"},
+    "blue": {"bg": "#4467e8", "ink": "#ffffff", "soft": "#ffffff"},  # translucent white fails AA here
     "gold": {"bg": "#feaa00", "ink": "#1f1a0e", "soft": "rgba(31,26,14,0.72)"},
-    "lavender": {"bg": "#ae92ea", "ink": "#1c1533", "soft": "rgba(28,21,51,0.72)"},
+    "lavender": {"bg": "#ae92ea", "ink": "#1c1533", "soft": "rgba(28,21,51,0.85)"},
 }
 
 
