@@ -1,0 +1,101 @@
+{
+  "_source": "Public facts shown on the cards. Numbers carry their as-of dates.",
+  "name": "Jack Nguyen",
+  "headline": [
+    "Analytics-driven",
+    "product builder"
+  ],
+  "roles": [
+    "Co-Founder @ Lumist.ai",
+    "ERP Analyst I @ University of South Florida",
+    "Tampa, FL"
+  ],
+  "availability": "Open to APM and product roles starting 2027.",
+  "portfolio_url": "https://jknguyen-portfolio.vercel.app",
+  "linkedin_url": "https://www.linkedin.com/in/ndkn10292002/",
+  "chat": {
+    "title": "Ask about Jack",
+    "subtitle": "Answers from his public portfolio",
+    "question": "What did Jack build at Lumist?",
+    "answer": "He co-founded Lumist, an AI-powered SAT prep platform, and led product and analytics.",
+    "sources": [
+      "Lumist case study",
+      "Product analytics"
+    ],
+    "answer_numbers": "It reached 11,000+ users as of Oct 18, 2026. AI Tutor daily active users went from 24 to 400+ by Aug 4, 2026.",
+    "placeholder": "Ask about his roles, projects or skills",
+    "emphasis": [
+      "11,000+",
+      "24",
+      "400+"
+    ]
+  },
+  "satellites": {
+    "tutor": {
+      "label": "AI Tutor daily users",
+      "as_of": "Aug 4, 2026",
+      "before": 24,
+      "after": 400,
+      "suffix": "+"
+    },
+    "users": {
+      "value": 11000,
+      "suffix": "+",
+      "label": "Lumist users",
+      "as_of": "Oct 18, 2026"
+    }
+  },
+  "segments": {
+    "href": "https://jknguyen-portfolio.vercel.app/projects/online-retail",
+    "lead": "Champions.",
+    "rest": "A quarter of customers, most of the revenue.",
+    "rows": [
+      {
+        "label": "Customers",
+        "share": 25
+      },
+      {
+        "label": "Revenue",
+        "share": 69
+      }
+    ],
+    "source": "RFM segments, UCI Online Retail II, 1.07M rows",
+    "source_short": "UCI Online Retail II, 1.07M rows"
+  },
+  "forecast": {
+    "href": "https://jknguyen-portfolio.vercel.app/projects/revenue-forecasting",
+    "lead": "Forecast error",
+    "before": 22,
+    "after": 4.5,
+    "label": "MAPE, down from about 22%",
+    "source": "Walk-forward validated, synthetic data",
+    "lead_short": "Forecast error",
+    "label_short": [
+      "MAPE, down",
+      "from about 22%"
+    ],
+    "source_short": [
+      "Walk-forward,",
+      "synthetic data"
+    ]
+  },
+  "projects": [
+    {
+      "title": "Proofline",
+      "href": "https://github.com/ndkn-code/proofline"
+    },
+    {
+      "title": "Lumist Product Analytics",
+      "href": "https://github.com/ndkn-code/lumist-analytics-demo"
+    },
+    {
+      "title": "E-Commerce Customer Analytics",
+      "href": "https://github.com/ndkn-code/online-retail-analytics"
+    },
+    {
+      "title": "Revenue Forecasting",
+      "href": "https://github.com/ndkn-code/vng-revenue-forecasting"
+    }
+  ],
+  "pair_href": "https://jknguyen-portfolio.vercel.app/projects/online-retail"
+}

@@ -1,17 +1,11 @@
-### Hi, I'm Jack Nguyen 👋
+<p><a href="https://jknguyen-portfolio.vercel.app"><picture><source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="cards/hero-compact-dark.svg"><source media="(max-width: 600px)" srcset="cards/hero-compact-light.svg"><source media="(prefers-color-scheme: dark)" srcset="cards/hero-dark.svg"><img src="cards/hero-light.svg" alt="Jack Nguyen, analytics-driven product builder. What did Jack build at Lumist? He co-founded Lumist, an AI-powered SAT prep platform, and led product and analytics. AI Tutor daily users went from 24 to 400+ as of Aug 4, 2026; Lumist reached 11,000+ users as of Oct 18, 2026." width="100%"></picture></a></p>
 
-**Builder-founder — I ship AI products and turn data into decisions.** Co-Founder @ **Lumist.ai** (AI SAT-prep, 7,500+ users), building a full-stack AI learning platform on the side, and finishing an M.S. in Business Data Analytics (GPA 4.0).
+<p><a href="https://jknguyen-portfolio.vercel.app/projects/online-retail"><picture><source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="cards/pair-compact-dark.svg"><source media="(max-width: 600px)" srcset="cards/pair-compact-light.svg"><source media="(prefers-color-scheme: dark)" srcset="cards/pair-dark.svg"><img src="cards/pair-light.svg" alt="Champions. A quarter of customers, most of the revenue. 25% of customers, 69% of revenue. RFM segments, UCI Online Retail II, 1.07M rows. Forecast error: 4.5% MAPE, down from about 22%. Walk-forward validated, synthetic data." width="100%"></picture></a></p>
 
-🚀 Open to **Product (APM)** and **Data / Analytics** roles
-🧰 SQL · Python (pandas, scikit-learn) · TypeScript / Next.js · LLMs & RAG · AI agents (M365 Copilot Studio) · Supabase · Tableau · Power BI
-🧠 I own products end-to-end: find the problem in the data, prototype, ship, and measure what changes.
+<p><picture><source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="cards/activity-compact-dark.svg"><source media="(max-width: 600px)" srcset="cards/activity-compact-light.svg"><source media="(prefers-color-scheme: dark)" srcset="cards/activity-dark.svg"><img src="cards/activity-light.svg" alt="GitHub contributions in the last year." width="100%"></picture></p>
 
-**Featured work**
-- 🤖 [DebateLab](https://github.com/ndkn-code/DebateLab) — full-stack AI edtech platform: real-time speech-to-text scoring, AI debate coaching, adaptive practice (Next.js, Supabase, LLMs)
-- 🔌 [Lumi the Secretary](https://github.com/ndkn-code/lumi-bot) — internal AI agent querying 5 data sources with a deny-by-default sandbox, reporting via Telegram
-- 📈 [Revenue Forecasting](https://github.com/ndkn-code/vng-revenue-forecasting) — gradient boosting vs baselines, walk-forward backtest (~22% → ~4.5% error)
-- 🛒 [Online Retail Analytics](https://github.com/ndkn-code/online-retail-analytics) — RFM segmentation + cohort retention on 1M+ rows of real public UCI data (SQL, Python, Tableau)
-- 🧾 [Vendor & AP Analytics](https://github.com/ndkn-code/vendor-ap-analytics) — spend & master-data audit with advanced SQL (CTEs, window functions), Power BI
-- 🌐 [Portfolio & full case studies »](https://jknguyen-portfolio.vercel.app)
+**Selected work:** [Proofline](https://github.com/ndkn-code/proofline) · [Lumist Product Analytics](https://github.com/ndkn-code/lumist-analytics-demo) · [E-Commerce Customer Analytics](https://github.com/ndkn-code/online-retail-analytics) · [Revenue Forecasting](https://github.com/ndkn-code/vng-revenue-forecasting)
 
-**Reach me** — [LinkedIn](https://www.linkedin.com/in/ndkn10292002/) · [Portfolio](https://jknguyen-portfolio.vercel.app)
+[Portfolio and case studies](https://jknguyen-portfolio.vercel.app) · [LinkedIn](https://www.linkedin.com/in/ndkn10292002/)
+
+<sub>Cards are SVGs drawn by `scripts/render_cards.py` and refreshed daily by a GitHub Action. Font: Google Sans, SIL Open Font License (`fonts/OFL.txt`).</sub>
