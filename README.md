@@ -8,4 +8,4 @@
 
 [Portfolio and case studies](https://jknguyen-portfolio.vercel.app) · [LinkedIn](https://www.linkedin.com/in/ndkn10292002/)
 
-<sub>Cards are SVGs drawn by `scripts/render_cards.py` and refreshed daily by a GitHub Action. Font: Google Sans, SIL Open Font License (`fonts/OFL.txt`).</sub>
+<sub>Cards are SVGs drawn by `scripts/render_cards.py` and refreshed daily by a GitHub Action. Type: [Timeless](https://timeless.co), set as outlines.</sub>

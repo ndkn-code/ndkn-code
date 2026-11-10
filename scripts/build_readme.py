@@ -37,7 +37,7 @@ blocks = [
 ]
 work = " · ".join(f"[{x['title']}]({x['href']})" for x in p["projects"])
 links = f"[Portfolio and case studies]({p['portfolio_url']}) · [LinkedIn]({p['linkedin_url']})"
-note = "Cards are SVGs drawn by `scripts/render_cards.py` and refreshed daily by a GitHub Action. Font: Google Sans, SIL Open Font License (`fonts/OFL.txt`)."
+note = "Cards are SVGs drawn by `scripts/render_cards.py` and refreshed daily by a GitHub Action. Type: [Timeless](https://timeless.co), set as outlines."
 
 if cards == "cards":
     (ROOT / "README.md").write_text("\n\n".join(blocks) + f"\n\n**Selected work:** {work}\n\n{links}\n\n<sub>{note}</sub>\n")

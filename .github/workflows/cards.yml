@@ -5,7 +5,7 @@ on:
     - cron: "17 11 * * *" # daily, 7:17 ET
   workflow_dispatch:
   push:
-    paths: ["data/profile.json", "scripts/**"]
+    paths: ["data/profile.json", "scripts/**", ".github/workflows/cards.yml"]
 
 permissions:
   contents: write
@@ -18,16 +18,47 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install fonttools brotli
+      - run: pip install fonttools brotli uharfbuzz
+
+      # Timeless is licensed for use in works but must never sit in a public
+      # repository. The cards draw text as outlines; the fonts come from
+      # encrypted secrets into the runner's temp folder, outside the checkout.
+      - name: Load Timeless from secrets
+        env:
+          SANS_400: ${{ secrets.TIMELESS_SANS_400 }}
+          SANS_500: ${{ secrets.TIMELESS_SANS_500 }}
+          SANS_600: ${{ secrets.TIMELESS_SANS_600 }}
+          SERIF_300: ${{ secrets.TIMELESS_SERIF_300 }}
+          SERIF_400: ${{ secrets.TIMELESS_SERIF_400 }}
+          SERIF_ITALIC_400: ${{ secrets.TIMELESS_SERIF_ITALIC_400 }}
+        run: |
+          d="$RUNNER_TEMP/timeless"
+          mkdir -p "$d"
+          printf '%s' "$SANS_400" | base64 -d > "$d/TimelessSans-GroteskRegular.woff2"
+          printf '%s' "$SANS_500" | base64 -d > "$d/TimelessSans-GroteskMedium.woff2"
+          printf '%s' "$SANS_600" | base64 -d > "$d/TimelessSans-GroteskSemibold.woff2"
+          printf '%s' "$SERIF_300" | base64 -d > "$d/TimelessSerif-Light.woff2"
+          printf '%s' "$SERIF_400" | base64 -d > "$d/TimelessSerif-Regular.woff2"
+          printf '%s' "$SERIF_ITALIC_400" | base64 -d > "$d/TimelessSerif-RegularItalic.woff2"
+          echo "TIMELESS_DIR=$d" >> "$GITHUB_ENV"
+
       - run: python scripts/fetch_contributions.py
         env:
           GITHUB_TOKEN: ${{ secrets.CONTRIB_TOKEN || secrets.GITHUB_TOKEN }}
       - run: python scripts/render_cards.py
       - run: python scripts/build_readme.py
+
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/contributions.json cards README.md
+          if git diff --cached --name-only | grep -Eiq '\.(woff2?|ttf|otf)$'; then
+            echo "Refusing to commit a font file." && exit 1
+          fi
           git diff --cached --quiet || git commit -m "Refresh README cards"
           git push
+
+      - name: Remove fonts
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/timeless"

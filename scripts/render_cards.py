@@ -26,21 +26,17 @@ Usage:
 
 from __future__ import annotations
 
-import base64
 import datetime as dt
 import json
 import math
 import os
 import re
-from functools import lru_cache
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from fontTools.ttLib import TTFont
-from fontTools.varLib import instancer
+from outline import face
 
 ROOT = Path(__file__).resolve().parent.parent
-FONT_PATH = ROOT / "fonts" / "GoogleSans-subset.woff2"
 OUT = ROOT / os.environ.get("OUT_DIR", "cards")
 STATIC = os.environ.get("STATIC") == "1"
 
@@ -87,32 +83,21 @@ THEMES = {
 }
 
 
-# ---------------------------------------------------------------- font + text
-
-@lru_cache(maxsize=None)
-def _font_b64() -> str:
-    return base64.b64encode(FONT_PATH.read_bytes()).decode("ascii")
+# ---------------------------------------------------------------- type
+# Every string is Timeless set as outlines (scripts/outline.py): the fonts never ship.
+# kind: "sans" (Timeless Sans Grotesk), "serif", "serif-italic", "serif-text".
 
 
-@lru_cache(maxsize=None)
-def _metrics(weight: int):
-    font = TTFont(FONT_PATH)
-    if "fvar" in font:
-        font = instancer.instantiateVariableFont(font, {"wght": weight})
-    return font.getBestCmap(), font["hmtx"].metrics, font["head"].unitsPerEm
+def tw(text: str, size: float, weight: int = 400, kind: str = "sans", tracking: float = 0, tnum: bool = False) -> float:
+    """Advance width of a shaped string."""
+    return face(kind, weight).width(text, size, tracking, tnum)
 
 
-def tw(text: str, size: float, weight: int = 400) -> float:
-    """Advance width of a string in the embedded font."""
-    cmap, hmtx, upm = _metrics(weight)
-    return sum(hmtx[cmap.get(ord(c)) or cmap[32]][0] for c in text) * size / upm
-
-
-def wrap(text: str, size: float, width: float, weight: int = 400) -> list[str]:
+def wrap(text: str, size: float, width: float, weight: int = 400, kind: str = "sans") -> list[str]:
     lines, line = [], ""
     for word in text.split():
         trial = f"{line} {word}".strip()
-        if line and tw(trial, size, weight) > width:
+        if line and tw(trial, size, weight, kind) > width:
             lines.append(line)
             line = word
         else:
@@ -120,24 +105,27 @@ def wrap(text: str, size: float, width: float, weight: int = 400) -> list[str]:
     return lines + ([line] if line else [])
 
 
-def balance(text: str, size: float, width: float, weight: int = 400) -> list[str]:
+def balance(text: str, size: float, width: float, weight: int = 400, kind: str = "sans") -> list[str]:
     """Wrap at the narrowest width that keeps the line count, so lines even out."""
-    n = len(wrap(text, size, width, weight))
+    n = len(wrap(text, size, width, weight, kind))
     lo, hi = width * 0.5, width
     while hi - lo > 1:
         mid = (lo + hi) / 2
-        if len(wrap(text, size, mid, weight)) > n:
+        if len(wrap(text, size, mid, weight, kind)) > n:
             lo = mid
         else:
             hi = mid
-    return wrap(text, size, hi, weight)
+    return wrap(text, size, hi, weight, kind)
 
 
-def t(x, y, s, size, fill, weight=400, anchor="start", extra=""):
-    return (
-        f'<text x="{x:.1f}" y="{y:.1f}" font-size="{size}" font-weight="{weight}" '
-        f'fill="{fill}" text-anchor="{anchor}"{extra}>{escape(s)}</text>'
-    )
+def t(x, y, s, size, fill, weight=400, anchor="start", extra="", kind="sans", tracking=0, tnum=False):
+    """A run of text as one outlined path. The words stay readable in each card's title."""
+    f = face(kind, weight)
+    if anchor != "start":
+        w = f.width(s, size, tracking, tnum)
+        x -= w if anchor == "end" else w / 2
+    d = f.path(s, x, y, size, tracking, tnum)
+    return f'<path d="{d}" fill="{fill}"{extra}/>' if d else ""
 
 
 def rrect(x, y, w, h, r, fill, stroke=None, extra=""):
@@ -175,9 +163,6 @@ def svg(width, height, body, theme, css="", title="", defs="", x0=0):
 {defs}
 </defs>
 <style>
-@font-face {{ font-family: "GS"; src: url(data:font/woff2;base64,{_font_b64()}) format("woff2"); font-weight: 400 700; }}
-text {{ font-family: "GS", "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }}
-.tn {{ font-variant-numeric: tabular-nums; }}
 {motion}
 @media (prefers-reduced-motion: reduce) {{ * {{ animation: none !important; }} }}
 </style>
@@ -213,7 +198,6 @@ def count(x, y, start, end, size, fill, weight, delay, uid, *, decimals=0, prefi
     value is visible at rest and hidden only while the frames play. Frame 0
     also covers the lead-in, so the slot is never blank."""
     nodes, css = [], []
-    tn = " tn" if tabular else ""  # proportional when a unit sits after the final value
     for i in range(frames):
         eased = 1 - (1 - i / frames) ** 3
         v = start + (end - start) * eased
@@ -221,10 +205,10 @@ def count(x, y, start, end, size, fill, weight, delay, uid, *, decimals=0, prefi
         cls = f"{uid}{i}"
         s, d = (0, delay + step) if i == 0 else (delay + i * step, step)
         css.append(f".{cls}{{animation:on {d:.3f}s linear {s:.3f}s 1}}")
-        nodes.append(t(x, y, f"{prefix}{shown}{unit}", size, fill, weight, anchor, f' class="{cls}{tn}" opacity="0"'))
+        nodes.append(t(x, y, f"{prefix}{shown}{unit}", size, fill, weight, anchor, f' class="{cls}" opacity="0"', tnum=tabular))
     total = delay + frames * step
     css.append(f".{uid}z{{animation:off {total:.3f}s linear 0s 1}}")
-    nodes.append(t(x, y, f"{prefix}{end:,.{decimals}f}{unit}{suffix}", size, fill, weight, anchor, f' class="{uid}z{tn}"'))
+    nodes.append(t(x, y, f"{prefix}{end:,.{decimals}f}{unit}{suffix}", size, fill, weight, anchor, f' class="{uid}z"', tnum=tabular))
     return "\n".join(nodes), "".join(css)
 
 
@@ -270,12 +254,12 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
     cx = INSET[compact]
     if compact:
         W, WX = 358, cx
-        name_size, head_size, role_size = 30, 21, 13.5
+        name_size, head_size, role_size = 36, 23, 13.5
         copy_top = 22
         answer = chat["answer"]
     else:
         W, WX = 840, 436
-        name_size, head_size, role_size = 40, 26, 14.5
+        name_size, head_size, role_size = 50, 30, 14.5
         copy_top = 0
         answer = chat["answer"]
     right = W - cx  # the thread's right edge; the window itself runs past the card
@@ -285,10 +269,10 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
         y_name = top + 26 * (name_size / 40) + (4 if compact else 0)
         y_h1 = y_name + head_size * 1.75
         y_h2 = y_h1 + head_size * 1.3
-        out.append(t(cx, y_name, p["name"], name_size, th["strong"], 700))
-        out.append(t(cx, y_h1, p["headline"][0], head_size, th["ink"], 500))
-        out.append(t(cx, y_h2, p["headline"][1], head_size, th["primary"], 600))
-        ul_w = tw(p["headline"][1], head_size, 600)
+        out.append(t(cx, y_name, p["name"], name_size, th["strong"], 400, kind="serif"))
+        out.append(t(cx, y_h1, p["headline"][0], head_size, th["ink"], 300, kind="serif"))
+        out.append(t(cx, y_h2, p["headline"][1], head_size, th["primary"], 400, kind="serif-italic"))
+        ul_w = tw(p["headline"][1], head_size, 400, "serif-italic")
         uy = y_h2 + head_size * 0.38
         ul = f"M{cx - 1:.1f} {uy:.1f} C {cx + ul_w * 0.3:.1f} {uy + 4:.1f}, {cx + ul_w * 0.7:.1f} {uy - 3:.1f}, {cx + ul_w + 2:.1f} {uy + 1.5:.1f}"
         ul_len = ul_w * 1.05
@@ -300,7 +284,7 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
             out.append(t(cx, ry + i * lh, line, role_size, th["muted"]))
         y_avail = ry + len(p["roles"]) * lh + (14 if not compact else 10)
         out.append(t(cx, y_avail, p["availability"], role_size, th["ink"], 500))
-        widths = [tw(p["name"], name_size, 700), tw(p["availability"], role_size, 500)] + [tw(r, role_size) for r in p["roles"]]
+        widths = [tw(p["name"], name_size, 400, "serif"), tw(p["availability"], role_size, 500)] + [tw(r, role_size) for r in p["roles"]]
         return out, cc, y_name - name_size * 0.72, y_avail, cx + max(widths)
 
     _, _, ink_top, y_avail, copy_right = copy_block(copy_top)
@@ -421,6 +405,12 @@ def tiles(tl: dict, th: dict, compact: bool = False) -> str:
         n = n_lines if not compact else len(lines[k])
         return 112 + n * 20 + 40
 
+    # One number size for all tiles, the largest at which the widest number and unit fit.
+    def run_w(it, k):
+        return tw(f"{it['value']:,}{it['suffix']}", 50 * k, 400, "serif") + 8 + tw(it["unit"], 28 * k, 400, "serif-italic")
+    fit = min(1.0, min(text_w / run_w(it, 1.0) for it in items))
+    n_size, u_size = 50 * fit, 28 * fit
+
     css = [KEYFRAMES]
     body = ['<defs><linearGradient id="sheen" x1="0" x2="1" y1="0" y2="0">'
             '<stop offset="0" stop-color="#fff" stop-opacity="0"/>'
@@ -434,10 +424,10 @@ def tiles(tl: dict, th: dict, compact: bool = False) -> str:
         else:
             x, h = k * (tw_ + gap), tile_h(0)
         body.append(rrect(x, y, tw_, h, 16, c["bg"]))
-        body.append(t(x + pad, y + 38, it["label"], 12, c["soft"], 600, extra=' letter-spacing="1.6"'))
+        body.append(t(x + pad, y + 38, it["label"], 12, c["soft"], 600, tracking=1.6))
         num = f"{it['value']:,}{it['suffix']}"
         # The real number from the first frame; one shine sweep crosses the tile once.
-        body.append(t(x + pad - 1, y + 92, num, 40, c["ink"], 700))
+        body.append(t(x + pad - 1, y + 94, num, n_size, c["ink"], 400, kind="serif"))
         body.append(f'<clipPath id="tc{k}"><rect x="{x:.1f}" y="{y}" width="{tw_:.1f}" height="{h}" rx="16"/></clipPath>')
         band = 150
         # Hidden at rest (attribute), visible only while the sweep plays, so a still,
@@ -452,7 +442,7 @@ def tiles(tl: dict, th: dict, compact: bool = False) -> str:
             f"to{{opacity:1;transform:skewX(-18deg) translateX({travel:.0f}px)}}}}"
             f".sh{k}{{transform-box:fill-box;transform-origin:0 100%;animation:sweep{k} 1.1s cubic-bezier(.4,0,.2,1) {LATER + 0.3 + k * 0.15:.2f}s 1}}"
         )
-        body.append(t(x + pad - 1 + tw(num, 40, 700) + 8, y + 92, it["unit"], 20, c["ink"], 500))
+        body.append(t(x + pad - 1 + tw(num, n_size, 400, "serif") + 8, y + 94, it["unit"], u_size, c["ink"], 400, kind="serif-italic"))
         for i, line in enumerate(lines[k]):
             body.append(t(x + pad, y + 124 + i * 20, line, 14.5, c["ink"], 500))
         body.append(t(x + pad, y + h - 22, it["foot"], 12, c["soft"], 500))
@@ -469,9 +459,6 @@ def frameless(width, height, body, theme, css, title):
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{escape(title)}">
 <title>{escape(title)}</title>
 <style>
-@font-face {{ font-family: "GS"; src: url(data:font/woff2;base64,{_font_b64()}) format("woff2"); font-weight: 400 700; }}
-text {{ font-family: "GS", "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }}
-.tn {{ font-variant-numeric: tabular-nums; }}
 {motion}
 @media (prefers-reduced-motion: reduce) {{ * {{ animation: none !important; }} }}
 </style>
@@ -521,14 +508,14 @@ def activity(c: dict, th: dict, compact: bool = False) -> str:
     body = []
     if not compact:
         body += [
-            t(m, 48, head, 20, th["strong"], 700),
-            t(m + tw(head + " ", 20, 700), 48, f"in the last year, as of {as_of}", 14, th["muted"]),
+            t(m, 50, head, 26, th["strong"], 400, kind="serif"),
+            t(m + tw(head + " ", 26, 400, "serif"), 50, f"in the last year, as of {as_of}", 14, th["muted"]),
             t(m, 72, f"{best_name} was the busiest month, with {months[best]:,}.", 14, th["ink"], 500),
         ]
         shown, gy, gap = days, 112, 4
     else:
         body += [
-            t(m, 38, head, 18, th["strong"], 700),
+            t(m, 40, head, 24, th["strong"], 400, kind="serif"),
             t(m, 58, f"in the last year, as of {as_of}", 12.5, th["muted"]),
             t(m, 82, f"{best_name} was the busiest month,", 13, th["ink"], 500),
             t(m, 100, f"with {months[best]:,}. Last 26 weeks below.", 13, th["ink"], 500),
