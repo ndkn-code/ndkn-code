@@ -5,9 +5,9 @@ contribution calendar), writes cards/<name>-light.svg and cards/<name>-dark.svg.
 
 The set (one picture, not a stack of equal boxes):
   hero      the portfolio's Ask AI window answering one question, cropped at
-            the foot, with the two numbers it cites as cards straddling its edge
-  pair      two tiles in one image: Champions as a share of customers and of
-            revenue (a diagram), and forecast error falling to 4.5% (a stat)
+            the right and the foot
+  tiles     three colored tiles, BUILD, GROW and ANALYZE: one number each,
+            with its sentence and its as-of date or dataset
   activity  the contribution graph, the busiest day ringed and keyed
 
 Each card also has a -compact design for the phone column (358 wide, or the
@@ -207,12 +207,13 @@ KEYFRAMES = (
 
 
 def count(x, y, start, end, size, fill, weight, delay, uid, *, decimals=0, prefix="",
-          suffix="", unit="", anchor="start", frames=16, step=0.05):
+          suffix="", unit="", anchor="start", frames=16, step=0.05, tabular=True):
     """A number rolling from start to end. Frames are stacked text nodes, each
     hidden by attribute and shown by animation only in its own slot; the final
     value is visible at rest and hidden only while the frames play. Frame 0
     also covers the lead-in, so the slot is never blank."""
     nodes, css = [], []
+    tn = " tn" if tabular else ""  # proportional when a unit sits after the final value
     for i in range(frames):
         eased = 1 - (1 - i / frames) ** 3
         v = start + (end - start) * eased
@@ -220,10 +221,10 @@ def count(x, y, start, end, size, fill, weight, delay, uid, *, decimals=0, prefi
         cls = f"{uid}{i}"
         s, d = (0, delay + step) if i == 0 else (delay + i * step, step)
         css.append(f".{cls}{{animation:on {d:.3f}s linear {s:.3f}s 1}}")
-        nodes.append(t(x, y, f"{prefix}{shown}{unit}", size, fill, weight, anchor, f' class="{cls} tn" opacity="0"'))
+        nodes.append(t(x, y, f"{prefix}{shown}{unit}", size, fill, weight, anchor, f' class="{cls}{tn}" opacity="0"'))
     total = delay + frames * step
     css.append(f".{uid}z{{animation:off {total:.3f}s linear 0s 1}}")
-    nodes.append(t(x, y, f"{prefix}{end:,.{decimals}f}{unit}{suffix}", size, fill, weight, anchor, f' class="{uid}z tn"'))
+    nodes.append(t(x, y, f"{prefix}{end:,.{decimals}f}{unit}{suffix}", size, fill, weight, anchor, f' class="{uid}z{tn}"'))
     return "\n".join(nodes), "".join(css)
 
 
@@ -261,10 +262,9 @@ INSET = {False: 36, True: 20}  # one text inset for every card at each width
 
 def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
     """The portfolio's Ask AI window, running off the right and bottom edges, answering
-    one question. Desktop: copy left, the two cited numbers straddling the window (the
-    user count over its top edge, the AI Tutor finding over its left edge). Compact:
-    copy on top, the full answer with its numbers set bold, no satellites."""
-    chat, sat = p["chat"], p["satellites"]
+    one question. Desktop: copy left, window right. Compact: copy on top, window below.
+    The numbers the answer stands on are in the tiles card, so they are said once."""
+    chat = p["chat"]
     css = [KEYFRAMES]
     body = []
     cx = INSET[compact]
@@ -272,7 +272,7 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
         W, WX = 358, cx
         name_size, head_size, role_size = 30, 21, 13.5
         copy_top = 22
-        answer = chat["answer"] + " " + chat["answer_numbers"]
+        answer = chat["answer"]
     else:
         W, WX = 840, 436
         name_size, head_size, role_size = 40, 26, 14.5
@@ -325,17 +325,13 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
     a_h = chips_y_rel + 24 + 14
     a_y = q_y + 40 + 14
     a_bottom = a_y + a_h
-    sat_y = a_bottom + 16
-    comp_y = (sat_y + 64 + 18) if not compact else (a_bottom + 18)
+    comp_y = a_bottom + 18
     H = int(comp_y + 40 + 18)
 
     if not compact:
         # Center the copy on the card, but keep it clear of the left satellite.
         ink_h = y_avail - ink_top
         copy_top += (H - ink_h) / 2 - ink_top
-        s_left = WX - 56
-        if copy_right + 20 > s_left:
-            copy_top -= max(0, (y_avail - ink_top + copy_top + ink_top) - (sat_y - 22))
     out, cc, _, _, _ = copy_block(copy_top)
     body += out
     css += cc
@@ -394,124 +390,77 @@ def hero(p: dict, th: dict, mode: str, compact: bool = False) -> str:
     body.append(f'<g class="src">{"".join(chips)}</g>')
     css.append(f".src{{animation:drop .35s cubic-bezier(.2,.8,.2,1) {stream_end + 0.2:.2f}s 1 backwards}}")
 
-    if not compact:
-        arrive = stream_end + 0.25
-        # The finding: AI Tutor daily users, over the window's left edge under the answer.
-        tut = sat["tutor"]
-        lab = f"{tut['label']} · {tut['as_of']}"
-        s1_w = max(tw(lab, 12), tw(f"{tut['before']} to {tut['after']}{tut['suffix']}", 24, 700)) + 32
-        s1_x = WX - 56
-        bx1 = s1_x + 16
-        tx = bx1 + tw(f"{tut['before']} ", 24, 700)
-        nodes, c = count(tx + tw("to ", 14, 500) + 2, sat_y + 32, tut["before"], tut["after"], 24,
-                         th["primary"], 700, arrive + 0.25, "ta", suffix=tut["suffix"])
-        body.append(
-            f'<g class="sat0">{rrect(s1_x, sat_y, s1_w, 64, 16, th["raised"], th["rule"], LIFT)}'
-            f'{t(bx1, sat_y + 32, str(tut["before"]), 24, th["muted"], 700)}'
-            f'{t(tx, sat_y + 32, "to", 14, th["muted"], 500)}{nodes}{t(bx1, sat_y + 51, lab, 12, th["muted"])}</g>'
-        )
-        css.append(c + f".sat0{{animation:drop .45s cubic-bezier(.2,.8,.2,1) {arrive:.2f}s 1 backwards}}")
-
-        # Reach: Lumist users, over the window's top edge, clear of the header text.
-        us = sat["users"]
-        lab2 = f"{us['label']} · {us['as_of']}"
-        s2_w = max(tw(lab2, 12), tw(f"{us['value']:,}{us['suffix']}", 24, 700)) + 32
-        s2_x, s2_y = W - 24 - s2_w, 14
-        nodes, c = count(s2_x + 16, s2_y + 32, 0, us["value"], 24, th["primary"], 700, arrive + 0.4, "ub", suffix=us["suffix"])
-        body.append(
-            f'<g class="sat1">{rrect(s2_x, s2_y, s2_w, 64, 16, th["raised"], th["rule"], LIFT)}'
-            f'{nodes}{t(s2_x + 16, s2_y + 51, lab2, 12, th["muted"])}</g>'
-        )
-        css.append(c + f".sat1{{animation:drop .45s cubic-bezier(.2,.8,.2,1) {arrive + 0.12:.2f}s 1 backwards}}")
-
     title = f"{p['name']}. {' '.join(p['headline'])}. {chat['question']} {answer}"
     return svg(W, H, "\n".join(body), th, "".join(css), title)
 
 
-# ---------------------------------------------------------------- data pair
-# Two tiles in one image so the phone design can stack them full width.
-# The lower cards start after the hero's answer lands, so the hero leads.
+# ---------------------------------------------------------------- tiles
+# Three colored tiles in one image, so the phone design can stack them full width.
+# Each: a label, one number with its unit, one sentence, its as-of date or dataset.
+# They start after the hero's answer lands, so the hero leads.
 
 LATER = 2.9
+TILE = {
+    "blue": {"bg": "#4467e8", "ink": "#ffffff", "soft": "rgba(255,255,255,0.78)"},
+    "gold": {"bg": "#feaa00", "ink": "#1f1a0e", "soft": "rgba(31,26,14,0.72)"},
+    "lavender": {"bg": "#ae92ea", "ink": "#1c1533", "soft": "rgba(28,21,51,0.72)"},
+}
 
 
-def tile_frame(x, y, w, h, th):
-    return rrect(x + 0.5, y + 0.5, w - 1, h - 1, 16, th["paper"], th["rule"])
+def tiles(tl: dict, th: dict, compact: bool = False) -> str:
+    items = tl["items"]
+    pad = 24 if not compact else 20
+    gap = 16 if not compact else 12
+    W = 840 if not compact else 358
+    tw_ = (W - gap * (len(items) - 1)) / len(items) if not compact else W
+    text_w = tw_ - 2 * pad
+    lines = [balance(it["text"], 14.5, text_w, 500) for it in items]
+    n_lines = max(len(x) for x in lines) if not compact else None
 
+    def tile_h(k):
+        n = n_lines if not compact else len(lines[k])
+        return 112 + n * 20 + 40
 
-def pair(sg: dict, fc: dict, th: dict, compact: bool = False) -> str:
-    m = INSET[compact]
     css = [KEYFRAMES]
-    body = []
-    if not compact:
-        W, H, gap = 840, 212, 16
-        sw = 552
-        fx = sw + gap
-        fw = W - fx
-        tiles = [(0, 0, sw, H), (fx, 0, fw, H)]
-    else:
-        W, gap = 358, 14
-        sh, fh = 204, 132
-        H = sh + gap + fh
-        sw = fw = W
-        fx = 0
-        tiles = [(0, 0, W, sh), (0, sh + gap, W, fh)]
-    for tx_, ty_, tw_, th_ in tiles:
-        body.append(tile_frame(tx_, ty_, tw_, th_, th))
-
-    # Segments: Champions as a share of customers and of revenue.
-    if not compact:
-        body += [t(m, 46, sg["lead"], 18, th["strong"], 700),
-                 t(m + tw(sg["lead"] + " ", 18, 700), 46, sg["rest"], 18, th["muted"], 500)]
-        lab_w = 92
-        bx, bw = m + lab_w, sw - m - lab_w - 56
-        rows_y = [96, 136]
-    else:
-        body.append(t(m, 36, sg["lead"], 16, th["strong"], 700))
-        body.append(t(m + tw(sg["lead"] + " ", 16, 700), 36, "", 16, th["muted"]))
-        for i, line in enumerate(balance(sg["rest"], 14, W - 2 * m, 500)):
-            body.append(t(m, 58 + i * 19, line, 14, th["muted"], 500))
-        bx, bw = m, W - 2 * m
-        rows_y = [110, 152]
-    for i, row in enumerate(sg["rows"]):
-        y = rows_y[i]
-        fwid = bw * row["share"] / 100
-        if not compact:
-            body.append(t(m, y + 13, row["label"], 13.5, th["ink"], 500))
-            body.append(rrect(bx, y, bw, 18, 9, th["track"]))
-            body.append(rrect(bx, y, fwid, 18, 9, th["primary"], extra=f' class="s{i}"'))
-            body.append(t(bx + bw + 12, y + 14, f"{row['share']}%", 15, th["strong"], 700, extra=f' class="l{i}"'))
+    body = ['<defs><linearGradient id="sheen" x1="0" x2="1" y1="0" y2="0">'
+            '<stop offset="0" stop-color="#fff" stop-opacity="0"/>'
+            '<stop offset="0.5" stop-color="#fff" stop-opacity="0.32"/>'
+            '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>']
+    y = 0
+    for k, it in enumerate(items):
+        c = TILE[it["color"]]
+        if compact:
+            x, h = 0, tile_h(k)
         else:
-            body.append(t(m, y - 8, row["label"], 13, th["ink"], 500))
-            body.append(t(W - m, y - 8, f"{row['share']}%", 14, th["strong"], 700, "end", f' class="l{i}"'))
-            body.append(rrect(bx, y, bw, 14, 7, th["track"]))
-            body.append(rrect(bx, y, fwid, 14, 7, th["primary"], extra=f' class="s{i}"'))
-        d = LATER + i * 0.2
-        css.append(f".s{i}{{transform-box:fill-box;transform-origin:left;animation:grow-x .8s cubic-bezier(.2,.8,.2,1) {d:.2f}s 1 backwards}}")
-        css.append(f".l{i}{{animation:fade .3s ease-out {d + 0.6:.2f}s 1 backwards}}")
-    src_y = (H - 26) if not compact else (sh - 20)
-    body.append(t(m, src_y, sg["source"] if not compact else sg["source_short"], 12, th["muted"]))
-
-    # Forecast: one number at display size, its label, its source.
-    if not compact:
-        x = fx + m
-        body.append(t(x, 46, fc["lead"], 15, th["muted"], 500))
-        nodes, c = count(x - 2, 112, fc["before"], fc["after"], 60, th["strong"], 700, LATER + 0.3, "fc", decimals=1, unit="%", frames=20)
-        body += [nodes, t(x, 146, fc["label"], 14, th["ink"], 500), t(x, H - 26, fc["source"], 12, th["muted"])]
-    else:
-        y0 = sh + gap
-        body.append(t(m, y0 + 34, fc["lead"], 14, th["muted"], 500))
-        nodes, c = count(m - 1, y0 + 86, fc["before"], fc["after"], 44, th["strong"], 700, LATER + 0.3, "fc", decimals=1, unit="%", frames=20)
-        body.append(nodes)
-        lx = m + tw("22.0%", 44, 700) + 18
-        body.append(t(lx, y0 + 70, "MAPE, down from", 13, th["ink"], 500))
-        body.append(t(lx, y0 + 87, "about 22%", 13, th["ink"], 500))
-        body.append(t(m, y0 + fh - 20, fc["source"], 12, th["muted"]))
-    css.append(c)
-
-    title = (f"{sg['lead']} {sg['rest']} " + ", ".join(f"{r['share']}% of {r['label'].lower()}" for r in sg["rows"])
-             + f". {sg['source']}. {fc['lead']}: {fc['after']}% MAPE, down from about {fc['before']}%. {fc['source']}.")
-    return frameless(W, H, "\n".join(body), th, "".join(css), title)
+            x, h = k * (tw_ + gap), tile_h(0)
+        body.append(rrect(x, y, tw_, h, 16, c["bg"]))
+        body.append(t(x + pad, y + 38, it["label"], 12, c["soft"], 600, extra=' letter-spacing="1.6"'))
+        num = f"{it['value']:,}{it['suffix']}"
+        # The real number from the first frame; one shine sweep crosses the tile once.
+        body.append(t(x + pad - 1, y + 92, num, 40, c["ink"], 700))
+        body.append(f'<clipPath id="tc{k}"><rect x="{x:.1f}" y="{y}" width="{tw_:.1f}" height="{h}" rx="16"/></clipPath>')
+        band = 150
+        # Hidden at rest (attribute), visible only while the sweep plays, so a still,
+        # reduced motion and STATIC all show a clean tile.
+        body.append(
+            f'<g clip-path="url(#tc{k})"><rect class="sh{k}" x="{x - band - 70:.1f}" y="{y}" width="{band}" height="{h}" '
+            f'fill="url(#sheen)" opacity="0"/></g>'
+        )
+        travel = tw_ + band + 140
+        css.append(
+            f"@keyframes sweep{k}{{from{{opacity:1;transform:skewX(-18deg) translateX(0)}}"
+            f"to{{opacity:1;transform:skewX(-18deg) translateX({travel:.0f}px)}}}}"
+            f".sh{k}{{transform-box:fill-box;transform-origin:0 100%;animation:sweep{k} 1.1s cubic-bezier(.4,0,.2,1) {LATER + 0.3 + k * 0.15:.2f}s 1}}"
+        )
+        body.append(t(x + pad - 1 + tw(num, 40, 700) + 8, y + 92, it["unit"], 20, c["ink"], 500))
+        for i, line in enumerate(lines[k]):
+            body.append(t(x + pad, y + 124 + i * 20, line, 14.5, c["ink"], 500))
+        body.append(t(x + pad, y + h - 22, it["foot"], 12, c["soft"], 500))
+        if compact:
+            y += h + gap
+    H = (y - gap) if compact else tile_h(0)
+    title = " ".join(f"{it['label'].title()}: {it['value']:,}{it['suffix']} {it['unit']}. {it['text']} {it['foot']}." for it in items)
+    return frameless(W, int(H), "\n".join(body), th, "".join(css), title)
 
 
 def frameless(width, height, body, theme, css, title):
@@ -684,7 +633,7 @@ def main() -> None:
             tag = "-compact" if compact else ""
             files = {
                 "hero": hero(profile, th, mode, compact),
-                "pair": pair(profile["segments"], profile["forecast"], th, compact),
+                "tiles": tiles(profile["tiles"], th, compact),
                 "activity": activity(contrib, th, compact),
             }
             for name, content in files.items():

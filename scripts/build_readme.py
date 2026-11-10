@@ -24,18 +24,15 @@ def pic(name, alt, width, href=None):
     return f'<a href="{href}">{img}</a>' if href else img
 
 
-chat, sat, sg, fc = p["chat"], p["satellites"], p["segments"], p["forecast"]
-hero_alt = (
-    f"{p['name']}, {' '.join(p['headline']).lower()}. {chat['question']} {chat['answer']} "
-    f"AI Tutor daily users went from {sat['tutor']['before']} to {sat['tutor']['after']}+ as of {sat['tutor']['as_of']}; "
-    f"Lumist reached {sat['users']['value']:,}+ users as of {sat['users']['as_of']}."
+chat, tl = p["chat"], p["tiles"]
+hero_alt = f"{p['name']}, {' '.join(p['headline']).lower()}. {chat['question']} {chat['answer']}"
+tiles_alt = " ".join(
+    f"{it['label'].title()}: {it['value']:,}{it['suffix']} {it['unit']}. {it['text']} {it['foot']}." for it in tl["items"]
 )
-seg_alt = f"{sg['lead']} {sg['rest']} " + ", ".join(f"{r['share']}% of {r['label'].lower()}" for r in sg["rows"]) + f". {sg['source']}."
-fc_alt = f"{fc['lead']}: {fc['after']}% MAPE, down from about {fc['before']}%. {fc['source']}."
 
 blocks = [
     f"<p>{pic('hero', hero_alt, '100%', p['portfolio_url'])}</p>",
-    f"<p>{pic('pair', seg_alt + ' ' + fc_alt, '100%', sg['href'])}</p>",
+    f"<p>{pic('tiles', tiles_alt, '100%', tl['href'])}</p>",
     f"<p>{pic('activity', 'GitHub contributions in the last year.', '100%')}</p>",
 ]
 work = " · ".join(f"[{x['title']}]({x['href']})" for x in p["projects"])
